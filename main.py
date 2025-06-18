@@ -43,28 +43,7 @@ def aggiungi_voce():
         writer.writerow([data, categoria, descrizione, entrata, uscita, buoni])
 
     print("✅ Voce aggiunta correttamente!")
-
-# Menu principale
-if __name__ == "__main__":
-    while True:
-        print("\n--- MENU ---")
-        print("1. Aggiungi voce")
-        print("2. Visualizza bilancio")
-        print("3. Esci")
-        scelta = input("Scegli un'opzione: ")
-
-        if scelta == "1":
-            aggiungi_voce()
-        elif scelta == "2":
-            analizza_bilancio()
-        elif scelta == "3":
-            print("Uscita dal programma.")
-            break
-        else:
-            print("⚠️ Scelta non valida. Riprova.")
-
-from collections import defaultdict
-
+#funzione per analizzare il bilancio
 def analizza_bilancio():
     try:
         with open(file_csv, "r", newline="") as f:
@@ -93,3 +72,25 @@ def analizza_bilancio():
 
     except FileNotFoundError:
         print("❌ File CSV non trovato. Inserisci almeno una voce prima.")
+# Menu principale
+if __name__ == "__main__":
+    while True:
+        print("\n--- MENU ---")
+        print("1. Aggiungi voce")
+        print("2. Visualizza bilancio")
+        print("3. Esci")
+        scelta = input("Scegli un'opzione: ")
+
+        if scelta == "1":
+            aggiungi_voce()
+        elif scelta == "2":
+            analizza_bilancio()
+        elif scelta == "3":
+            print("Uscita dal programma.")
+            break
+        else:
+            print("⚠️ Scelta non valida. Riprova.")
+
+from collections import defaultdict
+
+
