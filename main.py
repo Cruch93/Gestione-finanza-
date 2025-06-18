@@ -1,48 +1,61 @@
+import csv
+from datetime import datetime
 
-import tkinter as tk
-from tkinter import ttk, messagebox
+# File CSV di destinazione
+file_csv = "bilancio_familiare.csv"
+intestazioni = ["Data", "Categoria", "Descrizione", "Entrata", "Uscita", "Buoni Pasto"]
 
-class BilancioApp:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Gestione Finanze Familiari")
+# Crea file con intestazioni se non esiste
+try:
+    with open(file_csv, "x", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(intestazioni)
+except FileExistsError:
+    pass
 
-        # Categorie fisse
-        self.categorie = ["Spese Alimentari", "Spese Casa", "Varie", "Abbigliamento", "Auto", "Rifornimenti", "Sanità", "Uscite"]
+# Funzione per aggiungere voce
+def aggiungi_voce():
+    print("\nAggiunta nuova voce")
+    data = input("Inserisci la data (gg/mm/aaaa) [lascia vuoto per oggi]: ")
+    if not data:
+        data = datetime.now().strftime("%d/%m/%Y")
 
-        # Etichetta e menu categoria
-        tk.Label(root, text="Categoria:").grid(row=0, column=0, padx=10, pady=10)
-        self.categoria_var = tk.StringVar()
-        self.categoria_menu = ttk.Combobox(root, textvariable=self.categoria_var, values=self.categorie, state="readonly")
-        self.categoria_menu.grid(row=0, column=1)
+    categoria = input("Categoria (es. Casa, Alimentari, ecc.): ")
+    descrizione = input("Descrizione: ")
 
-        # Etichetta e campo descrizione
-        tk.Label(root, text="Descrizione:").grid(row=1, column=0, padx=10, pady=10)
-        self.descrizione_entry = tk.Entry(root)
-        self.descrizione_entry.grid(row=1, column=1)
+    try:
+        entrata = float(input("Entrata (0 se non presente): "))
+    except ValueError:
+        entrata = 0.0
 
-        # Etichetta e campo importo
-        tk.Label(root, text="Importo (€):").grid(row=2, column=0, padx=10, pady=10)
-        self.importo_entry = tk.Entry(root)
-        self.importo_entry.grid(row=2, column=1)
+    try:
+        uscita = float(input("Uscita (0 se non presente): "))
+    except ValueError:
+        uscita = 0.0
 
-        # Pulsante aggiungi
-        self.aggiungi_btn = tk.Button(root, text="Aggiungi Spesa", command=self.aggiungi_spesa)
-        self.aggiungi_btn.grid(row=3, column=0, columnspan=2, pady=20)
+    try:
+        buoni = float(input("Buoni pasto utilizzati (0 se non presenti): "))
+    except ValueError:
+        buoni = 0.0
 
-    def aggiungi_spesa(self):
-        categoria = self.categoria_var.get()
-        descrizione = self.descrizione_entry.get()
-        importo = self.importo_entry.get()
-        try:
-            importo = float(importo)
-            messagebox.showinfo("Conferma", f"Aggiunto: {categoria} - {descrizione} - {importo:.2f} €")
-            self.descrizione_entry.delete(0, tk.END)
-            self.importo_entry.delete(0, tk.END)
-        except ValueError:
-            messagebox.showerror("Errore", "Inserisci un importo valido!")
+    with open(file_csv, "a", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([data, categoria, descrizione, entrata, uscita, buoni])
 
+    print("✅ Voce aggiunta correttamente!")
+
+# Menu principale
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = BilancioApp(root)
-    root.mainloop()
+    while True:
+        print("\n--- MENU ---")
+        print("1. Aggiungi voce")
+        print("2. Esci")
+        scelta = input("Scegli un'opzione: ")
+
+        if scelta == "1":
+            aggiungi_voce()
+        elif scelta == "2":
+            print("Uscita dal programma.")
+            break
+        else:
+            print("⚠️ Scelta non valida. Riprova.")
