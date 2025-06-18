@@ -43,36 +43,32 @@ def aggiungi_voce():
         writer.writerow([data, categoria, descrizione, entrata, uscita, buoni])
 
     print("✅ Voce aggiunta correttamente!")
+    
 #funzione per analizzare il bilancio
+import pandas as pd
+
 def analizza_bilancio():
     try:
-        with open(file_csv, "r", newline="") as f:
-            reader = csv.DictReader(f)
-            tot_entrate = 0.0
-            tot_uscite = 0.0
-            tot_buoni = 0.0
-            spese_per_categoria = defaultdict(float)
+        df = pd.read_csv(file_csv)
 
-            for riga in reader:
-                tot_entrate += float(riga["Entrata"] or 0)
-                tot_uscite += float(riga["Uscita"] or 0)
-                tot_buoni += float(riga["Buoni Pasto"] or 0)
-                if riga["Categoria"]:
-                    spese_per_categoria[riga["Categoria"]] += float(riga["Uscita"] or 0)
+        # Conversione valori a numerici (se ci sono errori)
+        df["Entrata"] = pd.to_numeric(df["Entrata"], errors="coerce").fillna(0)
+        df["Uscita"] = pd.to_numeric(df["Uscita"], errors="coerce").fillna(0)
+        df["Buoni Pasto"] = pd.to_numeric(df["Buoni Pasto"], errors="coerce").fillna(0)
 
-            print("\n📊 RIEPILOGO BILANCIO 📊")
-            print(f"Totale entrate:  € {tot_entrate:.2f}")
-            print(f"Totale uscite:   € {tot_uscite:.2f}")
-            print(f"Buoni pasto:     € {tot_buoni:.2f}")
-            print(f"Saldo netto:     € {tot_entrate - tot_uscite:.2f}")
+        print("\n📊 RIEPILOGO GENERALE")
+        print(f"Totale entrate:  € {df['Entrata'].sum():.2f}")
+        print(f"Totale uscite:   € {df['Uscita'].sum():.2f}")
+        print(f"Totale buoni:    € {df['Buoni Pasto'].sum():.2f}")
+        print(f"Saldo netto:     € {(df['Entrata'].sum() - df['Uscita'].sum()):.2f}")
 
-            print("\n🗂️ Spese per categoria:")
-            for cat, valore in spese_per_categoria.items():
-                print(f"- {cat}: € {valore:.2f}")
+        print("\n🗂️ Totale uscite per categoria:")
+        print(df.groupby("Categoria")["Uscita"].sum().sort_values(ascending=False))
 
     except FileNotFoundError:
-        print("❌ File CSV non trovato. Inserisci almeno una voce prima.")
-# Menu principale
+        print("❌ File CSV non trovato.")
+    except pd.errors.EmptyDataError:
+        print("❌ Il file è vuoto.")
 if __name__ == "__main__":
     while True:
         print("\n--- MENU ---")
