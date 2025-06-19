@@ -45,6 +45,7 @@ def aggiungi_voce():
     print("✅ Voce aggiunta correttamente!")
     
 #funzione per analizzare il bilancio
+from collections import defaultdict
 import pandas as pd
 
 def analizza_bilancio():
@@ -87,6 +88,6 @@ if __name__ == "__main__":
         else:
             print("⚠️ Scelta non valida. Riprova.")
 
-from collections import defaultdict
+
 
 
