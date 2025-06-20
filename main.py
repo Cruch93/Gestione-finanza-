@@ -11,8 +11,27 @@ INTESTAZIONI = ["ID", "DataVoce", "MeseRif", "Tipo", "Categoria", "Descrizione",
 # Categorie predefinite
 CATEGORIE = {
     "entrata": ["Stipendio", "Rimborso", "Altro"],
-    "uscita": ["Alimentari", "Casa", "Salute", "Trasporti", "Svago", "Mutuo", "Bollette", "Altro"]
+    "uscita": [
+        "Alimentari", "Casa", "Rifornimenti", "Auto", "Varie", "Abbigliamento",
+        "Sanitá", "Svago", "Bollette"
+    ]
 }
+
+# Descrizioni predefiniti
+
+DESCRIZIONI = {
+    "Alimentari": ["martinelli", "lidl", "europsin", "panificio"],
+    "Casa": ["ikea", "amazon", "brico"],
+    "Rifornimenti": ["fiesta", "furga"],
+    "Auto": ["tagliando", "assicurazione", "gomme"],
+    "Varie": [],
+    "Abbigliamento": ["kiabi", "vinted", "scarpe"],
+    "Sanitá": ["visita", "farmacia", "dentista"],
+    "Svago": ["pizza", "bar", "gelato", "pasticceria", "pranzo", "cena"],
+    "Bollette": ["luce", "gas", "acqua", "internet"],
+    "Stipendio": ["Ruben", "Vale"]
+}
+
 
 file_csv = None
 
@@ -53,20 +72,24 @@ def get_prossimo_id():
     except:
         return 1
 
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 def apri_finestra_bilancio():
     def aggiorna_riepilogo(*args):
-        mese = mese_var.get()
+        mese = mese_var.get().strip().zfill(2)
         if not mese:
             return
 
         try:
-            df = pd.read_csv(file_csv)
+            df = pd.read_csv(file_csv, dtype={"MeseRif": str})
         except Exception as e:
             messagebox.showerror("Errore", f"Impossibile leggere il file: {e}")
             return
 
-        df = df[df["MeseRif"].astype(str) == mese]
+        df = df[df["MeseRif"] == mese]
 
+        # Pulisci la tabella
         for row in tree.get_children():
             tree.delete(row)
 
@@ -76,7 +99,7 @@ def apri_finestra_bilancio():
         entrate = df[df["Tipo"] == "entrata"]["Importo"].sum()
         uscite = df[df["Tipo"] == "uscita"]["Importo"].sum()
         buoni = df["BuoniPasto"].fillna(0).sum()
-        saldo = entrate - uscite
+        saldo = entrate + buoni - uscite
 
         label_totali.config(text=(
             f"Entrate: € {entrate:.2f} | "
@@ -85,11 +108,50 @@ def apri_finestra_bilancio():
             f"Saldo: € {saldo:.2f}"
         ))
 
+        # Riepilogo testuale
         riepilogo = df[df["Tipo"] == "uscita"].groupby("Categoria")["Importo"].sum().sort_values(ascending=False)
         txt = "\n".join([f"{cat}: € {imp:.2f}" for cat, imp in riepilogo.items()])
         text_categorie.delete("1.0", tk.END)
         text_categorie.insert(tk.END, txt)
 
+        # === GRAFICI ===
+        for widget in grafico_frame.winfo_children():
+            widget.destroy()
+
+        # Grafico a torta: uscite per categoria
+        if not riepilogo.empty:
+            fig1, ax1 = plt.subplots(figsize=(4, 4))
+            ax1.pie(riepilogo.values, labels=riepilogo.index, autopct='%1.1f%%', startangle=140)
+            ax1.set_title("Distribuzione Uscite")
+            canvas1 = FigureCanvasTkAgg(fig1, master=grafico_frame)
+            canvas1.draw()
+            canvas1.get_tk_widget().pack(side=tk.LEFT, padx=10)
+
+               # Grafico a barre: entrate vs uscite vs risparmio
+        fig2, ax2 = plt.subplots(figsize=(4, 4))
+        risparmio = entrate + buoni - uscite
+        voci = ["Entrate", "Uscite", "Risparmio"]
+        valori = [entrate, uscite, risparmio]
+        colori = ["green", "red", "blue"]
+        bars = ax2.bar(voci, valori, color=colori)
+        ax2.set_ylabel("€")
+        ax2.set_title("Bilancio Mensile")
+
+        # Etichette sopra le barre
+        for bar in bars:
+            altezza = bar.get_height()
+            ax2.annotate(f"€ {altezza:.2f}",
+                         xy=(bar.get_x() + bar.get_width() / 2, altezza),
+                         xytext=(0, 5),
+                         textcoords="offset points",
+                         ha="center", va="bottom", fontsize=9)
+
+        canvas2 = FigureCanvasTkAgg(fig2, master=grafico_frame)
+        canvas2.draw()
+        canvas2.get_tk_widget().pack(side=tk.RIGHT, padx=10)
+
+
+    # Finestra
     win = tk.Toplevel()
     win.title("📊 Riepilogo Bilancio Mensile")
 
@@ -113,11 +175,17 @@ def apri_finestra_bilancio():
     text_categorie = tk.Text(win, height=8, width=40)
     text_categorie.grid(row=4, column=0, columnspan=3, padx=10, pady=5)
 
+    # Spazio per i grafici
+    global grafico_frame
+    grafico_frame = tk.Frame(win)
+    grafico_frame.grid(row=5, column=0, columnspan=3, pady=10)
+
+
 def avvia_gui_principale():
     def salva_voce():
         tipo = tipo_var.get()
         categoria = categoria_var.get()
-        descrizione = descrizione_entry.get()
+        descrizione = descrizione_var.get() 
         importo = importo_entry.get()
         buoni = buoni_entry.get() if tipo == "uscita" else ""
         fissa = "sì" if fissa_var.get() else "no"
@@ -149,7 +217,6 @@ def avvia_gui_principale():
         importo_entry.delete(0, tk.END)
         buoni_entry.delete(0, tk.END)
         categoria_var.set("")
-        tipo_var.set("")
         fissa_var.set(False)
 
     def aggiorna_categorie(*args):
@@ -158,6 +225,14 @@ def avvia_gui_principale():
         if tipo in CATEGORIE:
             for cat in CATEGORIE[tipo]:
                 categoria_menu['menu'].add_command(label=cat, command=tk._setit(categoria_var, cat))
+        categoria_var.set("")  # reset categoria
+
+def aggiorna_descrizioni(*args):
+    categoria = categoria_var.get()
+    descrizione_entry['values'] = DESCRIZIONI.get(categoria, [])
+    descrizione_entry.set("")
+
+            
 
     root = tk.Tk()
     root.title("Gestione Bilancio Familiare")
@@ -174,12 +249,16 @@ def avvia_gui_principale():
 
     tk.Label(root, text="Categoria:").grid(row=2, column=0, sticky="w")
     categoria_var = tk.StringVar()
+    categoria_var.trace("w", aggiorna_descrizioni)
     categoria_menu = ttk.OptionMenu(root, categoria_var, "")
     categoria_menu.grid(row=2, column=1)
 
     tk.Label(root, text="Descrizione:").grid(row=3, column=0, sticky="w")
-    descrizione_entry = tk.Entry(root, width=30)
+    descrizione_var = tk.StringVar()
+    descrizione_entry = ttk.Combobox(root, textvariable=descrizione_var, width=30)
     descrizione_entry.grid(row=3, column=1)
+    descrizione_entry['values'] = []  # inizialmente vuoto
+
 
     tk.Label(root, text="Importo (€):").grid(row=4, column=0, sticky="w")
     importo_entry = tk.Entry(root, width=15)
